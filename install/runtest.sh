@@ -1027,7 +1027,7 @@ while read -r guest_recipeid guest_name guest_mac guest_loc guest_ks guest_args 
    #CMDLINE="-b xenbr${bridge} -n ${guestname} -f ${IMAGE} $args"
    #A command is used for starting cloud-images with virt-install
    #virt-install --import --name $NAME --ram 512 --vcpus 2 --disk $NAME.raw --disk $NAME-cidata.iso,device=cdrom --network bridge=virbr0
-   CMDLINE="--import --name ${guest_name} --mac ${guest_mac} $guest_args --disk ${guest_name}.raw --disk ${guest_name}-cidata.iso,device=cdrom --debug"
+   CMDLINE="--import --name ${guest_name} --mac ${guest_mac} $guest_args --disk $(pwd)/${guest_name}.raw --disk $(pwd)/${guest_name}-cidata.iso,device=cdrom --debug"
    # --extra-args is only used in the installer
    #if [[ ${kvm_num} > 0 ]]; then
    #   if grep -q console=ttyS1 ./${guest_name}.ks; then 

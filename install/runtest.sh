@@ -1002,7 +1002,7 @@ while read -r guest_recipeid guest_name guest_mac guest_loc guest_ks guest_args 
    fi
 
    # generate user-data, meta-data and iso
-   ./get_user_data.py -k ${guest_name}.ks | ./${guest_name}-user-data
+   ./get_user_data.py -k ${guest_name}.ks > ./${guest_name}-user-data
    echo "Cloud user data:" | tee -a $OUTPUTFILE
    cat ./${guest_name}-user-data | tee -a $OUTPUTFILE
    echo "instance-id: ${guest_name};" > ./${guest_name}-meta-data

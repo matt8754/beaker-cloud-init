@@ -42,6 +42,5 @@ for guestrecipe in doc.getElementsByTagName('guestrecipe'):
         guestrecipe.getAttribute('mac_address') or 'RANDOM',
         guestrecipe.getAttribute('location') or 'LOCATIONMISSING',
         guestrecipe.getAttribute('kickstart_url') or 'KSMISSING',
-        guestrecipe.getAttribute('cloud_image') or 'CLOUDIMAGEMISSING',
         guestrecipe.getAttribute('guestargs'),
     ])

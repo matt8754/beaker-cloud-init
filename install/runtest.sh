@@ -961,14 +961,13 @@ if setupconsolelogs; then
    cat /var/log/logguestconsoles.* | tee -a $OUTPUTFILE
 fi
 
-while read -r guest_recipeid guest_name guest_mac guest_loc guest_ks cloud_image guest_args ; do
+while read -r guest_recipeid guest_name guest_mac guest_loc guest_ks guest_args ; do
    DeBug "guest is :
         guest_recipeid=$guest_recipeid
         guest_name=$guest_name
         guest_mac=$guest_mac
         guest_loc=$guest_loc
         guest_ks=$guest_ks
-        cloud_image=$cloud_image
         guest_args=$guest_args"
    if [ -z "$guest_name" ] ; then
       echo "get_guest_info.py did not return a guest name"
@@ -992,8 +991,8 @@ while read -r guest_recipeid guest_name guest_mac guest_loc guest_ks cloud_image
       exit 1
    fi
    # get cloud image
-   if ! wget -q ${cloud_image} -O ./${guest_name}.raw ; then 
-      echo "Can't reach ${cloud_image} , exiting"
+   if ! wget -q ${CLOUD_IMAGE} -O ./${guest_name}.raw ; then 
+      echo "Can't reach ${CLOUD_IMAGE} , exiting"
       report_result ${TEST}_cloud_image_unreachable FAIL 100
       exit 1
    fi

@@ -960,9 +960,9 @@ while read -r guest_recipeid guest_name guest_mac guest_loc guest_ks guest_args 
        image_format='qcow2'
    fi
 
-   echo "Fallocating VM files: `date`" | tee -a $OUTPUTFILE
-   fallocate_files ${CMDLINE} $(pwd)/guests/${guest_name}/${guest_name}.${image_format} >> $OUTPUTFILE 2>&1
-   echo "Fallocating VM files done: `date`" | tee -a $OUTPUTFILE
+#   echo "Fallocating VM files: `date`" | tee -a $OUTPUTFILE
+#   fallocate_files ${CMDLINE} $(pwd)/guests/${guest_name}/${guest_name}.${image_format} >> $OUTPUTFILE 2>&1
+#   echo "Fallocating VM files done: `date`" | tee -a $OUTPUTFILE
 
    if ! wget -q ${CLOUD_IMAGE} -O $(pwd)/guests/${guest_name}/${guest_name}.${image_format} ; then 
       echo "Can't reach ${CLOUD_IMAGE} , exiting"

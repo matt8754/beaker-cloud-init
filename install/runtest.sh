@@ -181,9 +181,9 @@ EOF
 
 function fallocate_files ()
 {
-    local cmdline="$*"
+    local cmdline="$1"
     local file_size=""
-    local file_path=""
+    local file_path="$2"
 
     if command -v fallocate > /dev/null; then
         echo "Have fallocate"
@@ -192,54 +192,17 @@ function fallocate_files ()
         return
     fi
 
-    # --lvm format doesn't need fallocate
-    echo $cmdline | grep -- "--lvm" > /dev/null
-    if [ $? -eq 0 ]; then
-        return
+    file_size=`echo $cmdline | grep -o -- "-s [0-9]\+" | awk '{print $2}'`
+    if [ -z "$file_size" ]; then
+        file_size=`echo $cmdline | grep -o -- "--file-size[= ][0-9]\+" | sed 's/--file-size[= ]//'`
     fi
 
-    # --part format doesn't need fallocate
-    echo $cmdline | grep -- "--part" > /dev/null
-    if [ $? -eq 0 ]; then
-        return
-    fi
-
-    # --disk format
-    echo $cmdline | grep -- "--disk" > /dev/null
-    if [ $? -eq 0 ]; then
-        echo $cmdline | grep -o -- "--disk[= ]\S\+" > disks
-        while read line; do
-            file_path=`echo $line | grep -o "path=[^, ]\+" | sed 's/path=//'`
-            file_size=`echo $line | grep -o "size=[^, ]\+" | sed 's/size=//'`
-            if [ -n "$file_size" -a -n "$file_path" ]; then
-                echo "fallocate -l${file_size}G $file_path"
-                fallocate -l${file_size}G $file_path
-                if [ $? -ne 0 ]; then
-                    echo "fallocate failed, removing file: $file_path"
-                    rm -f $file_path
-                fi
-            fi
-        done < disks
-    # -s/--file-size and -f and --file format
-    else
-        file_size=`echo $cmdline | grep -o -- "-s [0-9]\+" | awk '{print $2}'`
-        if [ -z "$file_size" ]; then
-            file_size=`echo $cmdline | grep -o -- "--file-size[= ][0-9]\+" | sed 's/--file-size[= ]//'`
-        fi
-
-        if [ -n "$file_size" ]; then
-            file_path=`echo $cmdline | grep -o -- "-f \S\+" | awk '{print $2}'`
-            if [ -z "$file_path" ]; then
-                file_path=`echo $cmdline | grep -o -- "--file[= ]\S\+" | sed 's/--file[= ]//'`
-            fi
-        fi
-        if [ -n "$file_size" -a -n "$file_path" ]; then
-            echo "fallocate -l${file_size}G $file_path"
-            fallocate -l${file_size}G $file_path
-            if [ $? -ne 0 ]; then
-                echo "fallocate failed, removing file: $file_path"
-                rm -f $file_path
-            fi
+    if [ -n "$file_size" -a -n "$file_path" ]; then
+        echo "fallocate -l${file_size}G $file_path"
+        fallocate -l${file_size}G $file_path
+        if [ $? -ne 0 ]; then
+            echo "fallocate failed, removing file: $file_path"
+            rm -f $file_path
         fi
     fi
 }
@@ -921,7 +884,7 @@ elif [[ ${minor} -ge 400 ]]; then
 fi
 i=0
 fail=0
-
+setupconsolelogs
 ./get_guest_info.py > ./tmp.guests
 echo "Guests info:" | tee -a $OUTPUTFILE
 cat ./tmp.guests | tee -a $OUTPUTFILE
@@ -990,8 +953,18 @@ while read -r guest_recipeid guest_name guest_mac guest_loc guest_ks guest_args 
       report_result ${TEST}_KSunreachable FAIL 100
       exit 1
    fi
-   # get cloud image
-   if ! wget -q ${CLOUD_IMAGE} -O ./${guest_name}.raw ; then 
+   
+   # get cloud image and default image formate is raw
+   image_format='raw'
+   if [[ ${CLOUD_IMAGE} =~ qcow2$ ]] ; then
+       image_format='qcow2'
+   fi
+
+   echo "Fallocating VM files: `date`" | tee -a $OUTPUTFILE
+   fallocate_files ${CMDLINE} $(pwd)/guests/${guest_name}/${guest_name}.${image_format} >> $OUTPUTFILE 2>&1
+   echo "Fallocating VM files done: `date`" | tee -a $OUTPUTFILE
+
+   if ! wget -q ${CLOUD_IMAGE} -O $(pwd)/guests/${guest_name}/${guest_name}.${image_format} ; then 
       echo "Can't reach ${CLOUD_IMAGE} , exiting"
       report_result ${TEST}_cloud_image_unreachable FAIL 100
       exit 1
@@ -1002,11 +975,11 @@ while read -r guest_recipeid guest_name guest_mac guest_loc guest_ks guest_args 
    fi
 
    # generate user-data, meta-data and iso
-   ./get_user_data.py -k ${guest_name}.ks > ./${guest_name}-user-data
+   ./get_user_data.py -k ${guest_name}.ks > $(pwd)/guests/${guest_name}/user-data
    echo "Cloud user data:" | tee -a $OUTPUTFILE
-   cat ./${guest_name}-user-data | tee -a $OUTPUTFILE
-   echo "instance-id: ${guest_name};" > ./${guest_name}-meta-data
-   if ! genisoimage -quiet -output ./${guest_name}-cidata.iso -volid cidata -joliet -rock ${guest_name}-user-data ${guest_name}-meta-data ; then
+   cat $(pwd)/guests/${guest_name}/user-data | tee -a $OUTPUTFILE
+   echo "instance-id: ${guest_name}" > $(pwd)/guests/${guest_name}/meta-data
+   if ! genisoimage -quiet -output $(pwd)/guests/${guest_name}/${guest_name}-cidata.iso -volid cidata -joliet -rock $(pwd)/guests/${guest_name}/user-data $(pwd)/guests/${guest_name}/meta-data ; then
       echo "Can't generate iso image for ${guest_name} , exiting"
       report_result ${TEST}_genisoimage_issue FAIL 100
       exit 1
@@ -1027,7 +1000,8 @@ while read -r guest_recipeid guest_name guest_mac guest_loc guest_ks guest_args 
    #CMDLINE="-b xenbr${bridge} -n ${guestname} -f ${IMAGE} $args"
    #A command is used for starting cloud-images with virt-install
    #virt-install --import --name $NAME --ram 512 --vcpus 2 --disk $NAME.raw --disk $NAME-cidata.iso,device=cdrom --network bridge=virbr0
-   CMDLINE="--import --name ${guest_name} --mac ${guest_mac} $guest_args --disk $(pwd)/${guest_name}.raw --disk $(pwd)/${guest_name}-cidata.iso,device=cdrom --debug"
+   CMDLINE="--import --name ${guest_name} --mac ${guest_mac} $guest_args --debug"
+   CMDLINE="${CMDLINE} --disk $(pwd)/guests/${guest_name}/${guest_name}.${image_format},format=${image_format} --disk $(pwd)/guests/${guest_name}/${guest_name}-cidata.iso,device=cdrom"
    # --extra-args is only used in the installer
    #if [[ ${kvm_num} > 0 ]]; then
    #   if grep -q console=ttyS1 ./${guest_name}.ks; then 
@@ -1145,10 +1119,6 @@ while read -r guest_recipeid guest_name guest_mac guest_loc guest_ks guest_args 
       fi
    fi  
    # end the workaround for BZ 729608
-   # no need to fallocate
-   #echo "Fallocating VM files: `date`" | tee -a $OUTPUTFILE
-   #fallocate_files ${CMDLINE} >> $OUTPUTFILE 2>&1
-   #echo "Fallocating VM files done: `date`" | tee -a $OUTPUTFILE
 
    # Tell Beaker the guest recipe has started.
    ./start_recipe.py $guest_recipeid

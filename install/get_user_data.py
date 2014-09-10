@@ -26,7 +26,7 @@ def process_kickstart(ksfile):
     except KickstartError as e:
         sys.stderr.write(str(e))
         sys.exit(1)
-    user_data = ''
+    user_data = '#!/bin/bash'
     # repo
     for repo in ksparser.handler.repo.repoList:
         if repo.mirrorlist:

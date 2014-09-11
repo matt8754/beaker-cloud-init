@@ -182,7 +182,7 @@ EOF
 function resize_files ()
 {
     local file_path="$1"
-    locat file_size=10 #hardcode 10G for now
+    local file_size=10 #hardcode 10G for now
 
     if command -v qemu-img > /dev/null; then
         echo "Have qemu-img"

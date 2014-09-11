@@ -179,29 +179,23 @@ EOF
     return 0
 }
 
-function fallocate_files ()
+function resize_files ()
 {
-    local cmdline="$1"
-    local file_size=""
-    local file_path="$2"
+    local file_path="$1"
+    locat file_size=10 #hardcode 10G for now
 
-    if command -v fallocate > /dev/null; then
-        echo "Have fallocate"
+    if command -v qemu-img > /dev/null; then
+        echo "Have qemu-img"
     else
-        echo "Doesn't have fallocate"
+        echo "Doesn't have qemu-img"
         return
     fi
 
-    file_size=`echo $cmdline | grep -o -- "-s [0-9]\+" | awk '{print $2}'`
-    if [ -z "$file_size" ]; then
-        file_size=`echo $cmdline | grep -o -- "--file-size[= ][0-9]\+" | sed 's/--file-size[= ]//'`
-    fi
-
-    if [ -n "$file_size" -a -n "$file_path" ]; then
-        echo "fallocate -l${file_size}G $file_path"
-        fallocate -l${file_size}G $file_path
+    if [ -n "$file_path" ]; then
+        echo "qemu-img resize $file_path +${file_size}G"
+        qemu-img resize $file_path +${file_size}G
         if [ $? -ne 0 ]; then
-            echo "fallocate failed, removing file: $file_path"
+            echo "resize failed, removing file: $file_path"
             rm -f $file_path
         fi
     fi
@@ -953,22 +947,22 @@ while read -r guest_recipeid guest_name guest_mac guest_loc guest_ks guest_args 
       report_result ${TEST}_KSunreachable FAIL 100
       exit 1
    fi
-   
+
    # get cloud image and default image formate is raw
    image_format='raw'
    if [[ ${CLOUD_IMAGE} =~ qcow2$ ]] ; then
        image_format='qcow2'
    fi
 
-#   echo "Fallocating VM files: `date`" | tee -a $OUTPUTFILE
-#   fallocate_files ${CMDLINE} $(pwd)/guests/${guest_name}/${guest_name}.${image_format} >> $OUTPUTFILE 2>&1
-#   echo "Fallocating VM files done: `date`" | tee -a $OUTPUTFILE
-
    if ! wget -q ${CLOUD_IMAGE} -O $(pwd)/guests/${guest_name}/${guest_name}.${image_format} ; then 
       echo "Can't reach ${CLOUD_IMAGE} , exiting"
       report_result ${TEST}_cloud_image_unreachable FAIL 100
       exit 1
    fi
+
+   echo "Resizing VM files: `date`" | tee -a $OUTPUTFILE
+   resize_files $(pwd)/guests/${guest_name}/${guest_name}.${image_format} >> $OUTPUTFILE 2>&1
+   echo "Resizing VM files done: `date`" | tee -a $OUTPUTFILE
 
    if [ -n "$*" ]; then
       guest_args=$*

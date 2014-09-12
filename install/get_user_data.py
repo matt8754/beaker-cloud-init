@@ -64,7 +64,8 @@ EOF
     # skip %prep
     # %post
     user_data += ksparser.handler.scripts[1].script
-
+    # remove cloud-init package and reboot
+    user_data += 'yum -y remove cloud-init\nreboot'
     print user_data
 
 def main(*args):

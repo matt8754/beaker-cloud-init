@@ -46,7 +46,9 @@ EOF
        repo.name,
        repo_url)  
     # rootpw
-    if ksparser.handler.rootpw.password:
+    if ksparser.handler.rootpw.isCrypted:
+        user_data += 'echo "root:%s" | chpasswd -e\n' % ksparser.handler.rootpw.password
+    else:
         user_data += 'echo "root:%s" | chpasswd\n' % ksparser.handler.rootpw.password
     # selinux
     if ksparser.handler.selinux.selinux is 0:
@@ -57,10 +59,13 @@ EOF
         selinux_status = 'enforcing'
     user_data += "sed -i 's/SELINUX=.*/SELINUX=%s/' /etc/selinux/config\n" % selinux_status
     # %packages
+    packages = []
     for group in ksparser.handler.packages.groupList:
-        user_data += 'yum -y install @%s\n' % group.name
+        packages.append("@%s" % group.name)
     for package in ksparser.handler.packages.packageList:
-        user_data += 'yum -y install %s\n' % package
+        packages.append(package)
+    if packages:
+        user_data += "yum -y install %s\n" % ' '.join(packages)
     # skip %prep
     # %post
     user_data += ksparser.handler.scripts[1].script

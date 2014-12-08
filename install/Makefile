@@ -10,7 +10,7 @@ RELATIVE_PATH=cloud-init/install
 export RHTS_RPM_NAME=distribution-distribution-virt-cloudinit-install
 
 # Version of the Test. Used with make tag.
-export TESTVERSION=1.0
+export TESTVERSION=2.0
 
 # The compiled namespace of the test.
 export TEST=$(TOPLEVEL_NAMESPACE)/$(PACKAGE_NAME)/$(RELATIVE_PATH)

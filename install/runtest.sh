@@ -3,6 +3,7 @@
 # Source the common test script helpers
 . /usr/bin/rhts_environment.sh
 . /usr/local/bin/rhts_virt_funcs.sh
+. /usr/share/beakerlib/beakerlib.sh
 
 result=PASS
 value=0
@@ -681,25 +682,24 @@ ONBOOT=yes
 TYPE=Bridge
 DELAY=0
 EOF
-      
-         service NetworkManager stop
-         chkconfig NetworkManager off
-         chkconfig network on
-         service network restart
-         if [[ $? != 0 ]]; then 
-             echo "problem restarting network" | tee -a $OUTPUTFILE
 
-             rpm -qa initscripts | grep "\.el7"
-             if [ $? -eq 0 ]; then
-                 echo "This is known RHEL7 issue, proceeding anyway.." | tee -a $OUTPUTFILE
-                 echo "Bug 886090 - ifcfg- config contains ONBOOT=yes for interface with no link" | tee -a $OUTPUTFILE
-                 report_result ${TEST}_networksetup FAIL 1
-             else
-                 report_result ${TEST}_networksetup FAIL 1
-                 exit 1
-             fi
+         if rlIsRHEL '<7' ; then
+            service NetworkManager stop
+            chkconfig NetworkManager off
+            chkconfig network on
+            service network restart
          else
-             echo "configured a bridge: $netdev "
+            # Turn on NetworkManager which supports bridging on RHEL7
+            chkconfig NetworkManager on
+            service NetworkManager restart
+         fi
+
+         if [[ $? != 0 ]]; then
+            echo "problem restarting network" | tee -a $OUTPUTFILE
+            report_result ${TEST}_networksetup FAIL 1
+            exit 1
+         else
+            echo "configured a bridge: $netdev "
          fi
 
          echo "Rebooting after configuring the bridge" >> $OUTPUTFILE
@@ -902,11 +902,8 @@ done < ./tmp.guests
 # only after qemu creates those files
 #
 # on some rhel5 releases xmlrpc-c package doesn't exist, install it here
-if [ ${ver:0:1} -lt 6 ]; then
-    minor_ver=$(sed 's/.* release 5\.\([0-9]*\) .*/\1/' /etc/redhat-release) 
-    if [[ ${minor_ver} < 6 && ${minor_ver} > 3 ]]; then 
+if rlIsRHEL 5.4 5.5 ; then
         setuprhel5_xmlrpcc
-    fi
 fi
 
 if setupconsolelogs; then
@@ -1193,8 +1190,8 @@ fi
 # turn on service for rhel5 console writing.
 # This is after the guests are installed so that it won't try to steal console
 # from the installation
-if [ ${ver:0:1} -lt 6 -a ${minor_ver} -gt 3 -a -z "${NORHEL5CONSOLELOGS}" ]; then
-        setuprhel5consoles 
+if rlIsRHEL 5 && rlIsRHEL '>5.3' && [ -z "${NORHEL5CONSOLELOGS}" ]; then
+    setuprhel5consoles
 fi
 
 # submit the relevant logfiles

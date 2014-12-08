@@ -24,7 +24,7 @@ exec="/usr/local/bin/zrhel5_write_consolelogs"
 prog="zrhel5_write_consolelogs"
 #config="/usr/local/etc/zrhel5_write_consolelogs.conf"
 pidfile="/var/run/$prog.pid"
-args="--testdir /home/mjia/beaker-core-tasks/virt/install"
+args=""
 
 # Export all variables in /etc/sysconfig/zrhel5_write_consolelogs
 set -a

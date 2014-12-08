@@ -7,7 +7,6 @@ PACKAGE_NAME=virt
 # The path of the test below the package:
 RELATIVE_PATH=cloud-init/install
 
-# Preserve the RPM name from the old repo location:
 export RHTS_RPM_NAME=distribution-distribution-virt-cloudinit-install
 
 # Version of the Test. Used with make tag.
@@ -50,7 +49,6 @@ BINFILES= guestcheck4down   \
 	getconsolefile    \
 	get_guest_info.py \
 	get_guest_fqdn.py \
-	get_user_data.py  \
 	rhts_submit_virt_logs \
 	rhts_virt_funcs.sh    \
 	guest1cmd             \
@@ -67,7 +65,7 @@ FILES=	$(METADATA)       \
 	virtinstall.exp   \
 	get_guest_info.py \
 	get_guest_fqdn.py \
-	get_user_data.py \
+	get_user_data.py  \
 	start_recipe.py   \
 	logguestconsoles.c \
 	logguestconsoles.initd \
@@ -100,7 +98,6 @@ $(METADATA):
 	@echo "Requires:	bridge-utils" >> $(METADATA)
 	@echo "Requires:	expect" >> $(METADATA)
 	@echo "Requires:	genisoimage" >> $(METADATA)
-	@echo "Requires:	kernel-xen"  >> $(METADATA)
 	@echo "Requires:	kvm"            >> $(METADATA)
 	@echo "Requires:	libvirt" >> $(METADATA)
 	@echo "Requires:	mkisofs" >> $(METADATA)
@@ -110,7 +107,6 @@ $(METADATA):
 	@echo "Requires:	virt-viewer" >> $(METADATA)
 	@echo "Requires:	vnc" >> $(METADATA)
 	@echo "Requires:	vnc-server" >> $(METADATA)
-	@echo "Requires:	xen" >> $(METADATA)
 	@echo "Requires:	xorg-x11-server-Xvfb" >> $(METADATA)
 	@echo "Requires:	xmlrpc-c-devel" >> $(METADATA)
 	@echo "Requires:	openssl-devel"  >> $(METADATA)
@@ -123,6 +119,5 @@ $(METADATA):
 	@echo "Requires:	@virtualization-client" >> $(METADATA)
 	@echo "Requires:	@x11" >> $(METADATA)
 	@echo "Requires:	@fonts" >> $(METADATA)
-	@echo "RunFor:		xen-libs"	>> $(METADATA)
 	@echo "RhtsOptions:     -Compatible -CompatService" >> $(METADATA)
 	@echo "License:		GPLv2"		>> $(METADATA)
